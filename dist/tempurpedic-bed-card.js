@@ -16,7 +16,6 @@
  *   number.{prefix}_vib_head, number.{prefix}_vib_torso, number.{prefix}_vib_legs
  */
 
-const HOLD_INTERVAL_MS = 250;
 
 const STYLES = `
   :host {
@@ -264,8 +263,6 @@ class TempurpedicBedCard extends HTMLElement {
     this._view = 'lift';       // 'lift' | 'massage'
     this._side = 'both';       // 'left' | 'right' | 'both'
     this._vibValues = { head: 1, torso: 1, legs: 1 };
-    this._holdTimer = null;
-    this._holdBtn = null;
   }
 
   setConfig(config) {
@@ -322,16 +319,18 @@ class TempurpedicBedCard extends HTMLElement {
   }
 
   _startHold(key) {
-    this._stopHold();
-    this._callButton(key);
-    this._holdTimer = setInterval(() => this._callButton(key), HOLD_INTERVAL_MS);
+    if (!this._hass) return;
+    this._activePrefixes().forEach(prefix => {
+      const eid = `button.${prefix}_${key}`;
+      if (this._hass.states[eid]) {
+        this._hass.callService('ha_tempurpedic', 'start_move', { entity_id: eid });
+      }
+    });
   }
 
   _stopHold() {
-    if (this._holdTimer) {
-      clearInterval(this._holdTimer);
-      this._holdTimer = null;
-    }
+    if (!this._hass) return;
+    this._hass.callService('ha_tempurpedic', 'stop_move', {});
   }
 
   _updateVibDisplays() {
