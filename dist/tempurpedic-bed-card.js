@@ -254,6 +254,16 @@ const STYLES = `
     opacity: 0.6;
   }
   .bed-silhouette svg { width: 100%; height: auto; display: block; }
+  .bed-head-group {
+    transform-box: fill-box;
+    transform-origin: 100% 100%;
+    transition: transform 0.15s ease-out;
+  }
+  .bed-leg-group {
+    transform-box: fill-box;
+    transform-origin: 0% 100%;
+    transition: transform 0.15s ease-out;
+  }
 
   /* ── hold hint ── */
   .hold-hint {
@@ -362,7 +372,7 @@ class TempurpedicBedCard extends HTMLElement {
     this.attachShadow({ mode: 'open' });
     this._view = 'lift';       // 'lift' | 'massage'
     this._side = 'both';       // 'left' | 'right' | 'both'
-    this._vibValues = { head: 1, torso: 1, legs: 1 };
+    this._vibValues = { head: 0, torso: 0, legs: 0 };
   }
 
   setConfig(config) {
@@ -376,15 +386,7 @@ class TempurpedicBedCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    // Sync vib number entities into local state
-    ['head', 'torso', 'legs'].forEach(zone => {
-      const prefix = this._activePrefixes()[0];
-      if (!prefix) return;
-      const eid = `number.${prefix}_vib_${zone}`;
-      const s = hass.states[eid];
-      if (s) this._vibValues[zone] = parseFloat(s.state) || 1;
-    });
-    this._updateVibDisplays();
+    this._updateSilhouette();
   }
 
   _activePrefixes() {
@@ -407,7 +409,7 @@ class TempurpedicBedCard extends HTMLElement {
 
   _setVib(zone, value) {
     if (!this._hass) return;
-    const clamped = Math.max(1, Math.min(10, value));
+    const clamped = Math.max(0, Math.min(10, value));
     this._vibValues[zone] = clamped;
     this._activePrefixes().forEach(prefix => {
       const eid = `number.${prefix}_vib_${zone}`;
@@ -443,6 +445,21 @@ class TempurpedicBedCard extends HTMLElement {
     });
   }
 
+  _updateSilhouette() {
+    if (!this.shadowRoot || !this._hass) return;
+    const prefix = this._activePrefixes()[0];
+    const headPct = prefix
+      ? (parseFloat(this._hass.states[`sensor.${prefix}_head_position`]?.state) || 0)
+      : 0;
+    const legPct = prefix
+      ? (parseFloat(this._hass.states[`sensor.${prefix}_leg_position`]?.state) || 0)
+      : 0;
+    const headGroup = this.shadowRoot.querySelector('.bed-head-group');
+    const legGroup  = this.shadowRoot.querySelector('.bed-leg-group');
+    if (headGroup) headGroup.style.transform = `rotate(${(headPct / 100) * 40}deg)`;
+    if (legGroup)  legGroup.style.transform  = `rotate(${-(legPct / 100) * 25}deg)`;
+  }
+
   _render() {
     const shadow = this.shadowRoot;
     shadow.innerHTML = '';
@@ -457,6 +474,7 @@ class TempurpedicBedCard extends HTMLElement {
     shadow.appendChild(card);
 
     this._attachEvents(card);
+    this._updateSilhouette();
   }
 
   _buildHTML() {
@@ -484,14 +502,18 @@ class TempurpedicBedCard extends HTMLElement {
   _buildLiftHTML() {
     return `
       <div class="bed-silhouette">
-        <svg viewBox="0 0 260 54" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="8" y="42" width="244" height="8" rx="4" fill="rgba(255,255,255,0.08)"/>
-          <path d="M8 24 Q8 18 18 18 L108 18 Q118 18 118 24 L118 42 L8 42 Z" fill="rgba(255,255,255,0.1)"/>
-          <rect x="120" y="32" width="132" height="10" rx="4" fill="rgba(255,255,255,0.1)"/>
-          <rect x="14" y="10" width="42" height="11" rx="5" fill="rgba(255,255,255,0.18)"/>
-          <line x1="119" y1="20" x2="119" y2="42" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-          <text x="63" y="53" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.35)" font-family="sans-serif" letter-spacing="1.5" font-weight="600">HEAD</text>
-          <text x="186" y="46" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.35)" font-family="sans-serif" letter-spacing="1.5" font-weight="600">LEG</text>
+        <svg viewBox="0 0 260 106" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="90" width="244" height="8" rx="4" fill="rgba(255,255,255,0.08)"/>
+          <line x1="119" y1="80" x2="119" y2="90" stroke="rgba(255,255,255,0.06)" stroke-width="2"/>
+          <g class="bed-head-group">
+            <rect x="8" y="80" width="110" height="10" fill="rgba(255,255,255,0.12)"/>
+            <rect x="12" y="68" width="38" height="10" rx="5" fill="rgba(255,255,255,0.20)"/>
+          </g>
+          <g class="bed-leg-group">
+            <rect x="120" y="80" width="132" height="10" fill="rgba(255,255,255,0.12)"/>
+          </g>
+          <text x="63" y="103" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.35)" font-family="sans-serif" letter-spacing="1.5" font-weight="600">HEAD</text>
+          <text x="186" y="103" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.35)" font-family="sans-serif" letter-spacing="1.5" font-weight="600">LEG</text>
         </svg>
       </div>
       <div class="controls-row">
@@ -513,19 +535,19 @@ class TempurpedicBedCard extends HTMLElement {
       <div class="vib-slider-group">
         <div class="vib-slider-row">
           <span class="vib-zone-label">HEAD</span>
-          <input type="range" class="vib-slider" min="1" max="10" step="1"
+          <input type="range" class="vib-slider" min="0" max="10" step="1"
             value="${this._vibValues.head}" data-vib-zone="head">
           <span class="vib-slider-val vib-val-head">${this._vibValues.head}</span>
         </div>
         <div class="vib-slider-row">
           <span class="vib-zone-label">LUMBAR</span>
-          <input type="range" class="vib-slider" min="1" max="10" step="1"
+          <input type="range" class="vib-slider" min="0" max="10" step="1"
             value="${this._vibValues.torso}" data-vib-zone="torso">
           <span class="vib-slider-val vib-val-torso">${this._vibValues.torso}</span>
         </div>
         <div class="vib-slider-row">
           <span class="vib-zone-label">LEG</span>
-          <input type="range" class="vib-slider" min="1" max="10" step="1"
+          <input type="range" class="vib-slider" min="0" max="10" step="1"
             value="${this._vibValues.legs}" data-vib-zone="legs">
           <span class="vib-slider-val vib-val-legs">${this._vibValues.legs}</span>
         </div>
@@ -592,7 +614,12 @@ _buildBottomBar() {
     // Instant action buttons (presets, vib modes, flat, stop)
     card.querySelectorAll('[data-action]').forEach(el => {
       el.addEventListener('click', e => {
-        this._callButton(e.currentTarget.dataset.action);
+        const action = e.currentTarget.dataset.action;
+        if (action === 'vibrate_off') {
+          ['head', 'torso', 'legs'].forEach(zone => this._setVib(zone, 0));
+        } else {
+          this._callButton(action);
+        }
         // Brief visual flash
         e.currentTarget.classList.add('active');
         setTimeout(() => e.currentTarget.classList.remove('active'), 300);
