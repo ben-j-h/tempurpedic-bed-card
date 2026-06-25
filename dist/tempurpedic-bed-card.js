@@ -248,8 +248,108 @@ const STYLES = `
     filter: brightness(0.8);
   }
 
-  /* massage wave icons */
-  .wave-icon { font-size: 16px; }
+  /* ── bed silhouette ── */
+  .bed-silhouette {
+    padding: 10px 20px 0;
+    opacity: 0.6;
+  }
+  .bed-silhouette svg { width: 100%; height: auto; display: block; }
+
+  /* ── hold hint ── */
+  .hold-hint {
+    font-size: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--secondary-text-color, rgba(255,255,255,0.3));
+    margin-top: -2px;
+  }
+
+  /* ── vibration sliders ── */
+  .vib-slider-group {
+    padding: 16px 24px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .vib-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .vib-zone-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--secondary-text-color, rgba(255,255,255,0.5));
+    width: 46px;
+    flex-shrink: 0;
+  }
+  .vib-slider {
+    flex: 1;
+    height: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--secondary-background-color, rgba(255,255,255,0.12));
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  .vib-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--primary-color, #03a9f4);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    cursor: pointer;
+  }
+  .vib-slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--primary-color, #03a9f4);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    cursor: pointer;
+    border: none;
+  }
+  .vib-slider-val {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary-color, #03a9f4);
+    width: 22px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── off button in massage row ── */
+  .off-btn {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--secondary-text-color, rgba(255,255,255,0.45));
+    background: rgba(255,255,255,0.04);
+  }
+  .off-btn:active {
+    background: var(--error-color, #f44336) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 6px rgba(200,0,0,0.4) !important;
+  }
+
+  /* ── updated nav tabs with labels ── */
+  .nav-tab {
+    width: auto !important;
+    height: auto !important;
+    padding: 6px 16px !important;
+    border-radius: 12px !important;
+    flex-direction: column !important;
+    gap: 2px;
+  }
+  .nav-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
 `;
 
 // SVG icons for bottom nav
@@ -336,8 +436,10 @@ class TempurpedicBedCard extends HTMLElement {
   _updateVibDisplays() {
     if (!this.shadowRoot) return;
     ['head', 'torso', 'legs'].forEach(zone => {
-      const el = this.shadowRoot.querySelector(`.vib-val-${zone}`);
-      if (el) el.textContent = this._vibValues[zone];
+      const val = this.shadowRoot.querySelector(`.vib-val-${zone}`);
+      if (val) val.textContent = this._vibValues[zone];
+      const slider = this.shadowRoot.querySelector(`[data-vib-zone="${zone}"]`);
+      if (slider) slider.value = this._vibValues[zone];
     });
   }
 
@@ -381,6 +483,17 @@ class TempurpedicBedCard extends HTMLElement {
 
   _buildLiftHTML() {
     return `
+      <div class="bed-silhouette">
+        <svg viewBox="0 0 260 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="42" width="244" height="8" rx="4" fill="rgba(255,255,255,0.08)"/>
+          <path d="M8 24 Q8 18 18 18 L108 18 Q118 18 118 24 L118 42 L8 42 Z" fill="rgba(255,255,255,0.1)"/>
+          <rect x="120" y="32" width="132" height="10" rx="4" fill="rgba(255,255,255,0.1)"/>
+          <rect x="14" y="10" width="42" height="11" rx="5" fill="rgba(255,255,255,0.18)"/>
+          <line x1="119" y1="20" x2="119" y2="42" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+          <text x="63" y="53" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.35)" font-family="sans-serif" letter-spacing="1.5" font-weight="600">HEAD</text>
+          <text x="186" y="46" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.35)" font-family="sans-serif" letter-spacing="1.5" font-weight="600">LEG</text>
+        </svg>
+      </div>
       <div class="controls-row">
         ${this._buildPillControl('head_up', 'head_down', 'HEAD')}
         ${this._buildPillControl('legs_up', 'legs_down', 'LEG')}
@@ -397,17 +510,33 @@ class TempurpedicBedCard extends HTMLElement {
 
   _buildMassageHTML() {
     return `
-      <div class="controls-row">
-        ${this._buildVibControl('head',  'HEAD')}
-        ${this._buildVibControl('torso', 'LUMBAR')}
-        ${this._buildVibControl('legs',  'LEG')}
+      <div class="vib-slider-group">
+        <div class="vib-slider-row">
+          <span class="vib-zone-label">HEAD</span>
+          <input type="range" class="vib-slider" min="1" max="10" step="1"
+            value="${this._vibValues.head}" data-vib-zone="head">
+          <span class="vib-slider-val vib-val-head">${this._vibValues.head}</span>
+        </div>
+        <div class="vib-slider-row">
+          <span class="vib-zone-label">LUMBAR</span>
+          <input type="range" class="vib-slider" min="1" max="10" step="1"
+            value="${this._vibValues.torso}" data-vib-zone="torso">
+          <span class="vib-slider-val vib-val-torso">${this._vibValues.torso}</span>
+        </div>
+        <div class="vib-slider-row">
+          <span class="vib-zone-label">LEG</span>
+          <input type="range" class="vib-slider" min="1" max="10" step="1"
+            value="${this._vibValues.legs}" data-vib-zone="legs">
+          <span class="vib-slider-val vib-val-legs">${this._vibValues.legs}</span>
+        </div>
       </div>
-      <div class="section-label">MASSAGE MODE</div>
+      <div class="section-label">MASSAGE PRESET</div>
       <div class="round-row">
-        <button class="round-btn" data-action="vibrate_1" title="Wave 1">〜</button>
-        <button class="round-btn" data-action="vibrate_2" title="Wave 2">≈</button>
-        <button class="round-btn" data-action="vibrate_3" title="Wave 3">≋</button>
-        <button class="round-btn" data-action="vibrate_4" title="Pulse">▮▮</button>
+        <button class="round-btn" data-action="vibrate_1">1</button>
+        <button class="round-btn" data-action="vibrate_2">2</button>
+        <button class="round-btn" data-action="vibrate_3">3</button>
+        <button class="round-btn" data-action="vibrate_4">4</button>
+        <button class="round-btn off-btn" data-action="vibrate_off">OFF</button>
       </div>
     `;
   }
@@ -420,36 +549,25 @@ class TempurpedicBedCard extends HTMLElement {
           <button class="pill-btn" data-hold="${downKey}">▼</button>
         </div>
         <div class="control-label">${label}</div>
+        <div class="hold-hint">hold to move</div>
       </div>
     `;
   }
 
-  _buildVibControl(zone, label) {
-    return `
-      <div class="control-group">
-        <div class="pill">
-          <button class="pill-btn" data-vib-up="${zone}">+</button>
-          <div class="vib-value vib-val-${zone}">${this._vibValues[zone]}</div>
-          <button class="pill-btn" data-vib-down="${zone}">−</button>
-        </div>
-        <div class="control-label">${label}</div>
-      </div>
-    `;
-  }
-
-  _buildBottomBar() {
+_buildBottomBar() {
     const isLift    = this._view === 'lift';
     const isMassage = this._view === 'massage';
-    const actionLabel = isMassage ? 'STOP' : 'FLAT';
-    const actionKey   = isMassage ? 'vibrate_off' : 'flat';
-
     return `
       <div class="bottom-bar">
         <div class="nav-tabs">
-          <button class="nav-tab ${isLift ? 'active' : ''}" data-view="lift" title="Lift">${ICON_LIFT}</button>
-          <button class="nav-tab ${isMassage ? 'active' : ''}" data-view="massage" title="Massage">${ICON_MASSAGE}</button>
+          <button class="nav-tab ${isLift ? 'active' : ''}" data-view="lift">
+            ${ICON_LIFT}<span class="nav-label">POSITION</span>
+          </button>
+          <button class="nav-tab ${isMassage ? 'active' : ''}" data-view="massage">
+            ${ICON_MASSAGE}<span class="nav-label">MASSAGE</span>
+          </button>
         </div>
-        <button class="action-btn" data-action="${actionKey}">${actionLabel}</button>
+        <button class="action-btn" data-action="flat">FLAT</button>
       </div>
     `;
   }
@@ -491,18 +609,12 @@ class TempurpedicBedCard extends HTMLElement {
       btn.addEventListener('pointercancel', onUp);
     });
 
-    // Vibration +/-
-    card.querySelectorAll('[data-vib-up]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const zone = btn.dataset.vibUp;
-        this._setVib(zone, this._vibValues[zone] + 1);
+    // Vibration sliders
+    card.querySelectorAll('[data-vib-zone]').forEach(slider => {
+      slider.addEventListener('input', e => {
+        this._setVib(e.currentTarget.dataset.vibZone, parseInt(e.currentTarget.value, 10));
       });
-    });
-    card.querySelectorAll('[data-vib-down]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const zone = btn.dataset.vibDown;
-        this._setVib(zone, this._vibValues[zone] - 1);
-      });
+      slider.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
     });
   }
 
