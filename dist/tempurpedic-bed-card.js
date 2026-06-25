@@ -24,13 +24,13 @@ const STYLES = `
   }
 
   .card {
-    background: linear-gradient(180deg, #0e2744 0%, #0a1e36 60%, #071629 100%);
+    background: var(--ha-card-background, var(--card-background-color, #1c1c1c));
     border-radius: 16px;
     overflow: hidden;
-    color: #fff;
+    color: var(--primary-text-color, #e8f4ff);
     user-select: none;
     -webkit-user-select: none;
-    touch-action: none;
+    border: 1px solid var(--divider-color, rgba(255,255,255,0.06));
   }
 
   /* ── header ── */
@@ -42,7 +42,7 @@ const STYLES = `
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 2px;
-    color: #a0b8d0;
+    color: var(--secondary-text-color, rgba(255,255,255,0.5));
     text-transform: uppercase;
   }
   .view-title {
@@ -51,7 +51,7 @@ const STYLES = `
     letter-spacing: 4px;
     text-transform: uppercase;
     margin-top: 4px;
-    color: #e8f4ff;
+    color: var(--primary-text-color, #e8f4ff);
   }
 
   /* ── side toggle ── */
@@ -60,7 +60,7 @@ const STYLES = `
     justify-content: center;
     gap: 0;
     margin: 10px auto 0;
-    background: rgba(255,255,255,0.08);
+    background: var(--secondary-background-color, rgba(255,255,255,0.07));
     border-radius: 20px;
     width: fit-content;
     padding: 3px;
@@ -72,14 +72,14 @@ const STYLES = `
     font-weight: 600;
     letter-spacing: 1px;
     text-transform: uppercase;
-    color: #7a99b8;
+    color: var(--secondary-text-color, rgba(255,255,255,0.5));
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
   }
   .side-btn.active {
-    background: linear-gradient(135deg, #5cb85c, #3a8a3a);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(60,160,60,0.4);
+    background: var(--primary-color, #03a9f4);
+    color: var(--text-primary-color, #fff);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   }
 
   /* ── controls row ── */
@@ -100,7 +100,7 @@ const STYLES = `
     font-weight: 600;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: #7a99b8;
+    color: var(--secondary-text-color, rgba(255,255,255,0.5));
     margin-top: 4px;
   }
 
@@ -110,11 +110,11 @@ const STYLES = `
     flex-direction: column;
     align-items: center;
     width: 68px;
-    background: linear-gradient(180deg, #2a3f55 0%, #1a2f45 100%);
+    background: var(--secondary-background-color, rgba(255,255,255,0.07));
     border-radius: 34px;
     padding: 6px;
     gap: 4px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2);
   }
 
   .pill-btn {
@@ -122,14 +122,14 @@ const STYLES = `
     height: 52px;
     border-radius: 50%;
     border: none;
-    background: linear-gradient(145deg, #6ecf5a, #3a9a28);
-    color: #fff;
+    background: var(--primary-color, #03a9f4);
+    color: var(--text-primary-color, #fff);
     font-size: 22px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.2);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.15);
     transition: filter 0.1s, transform 0.1s;
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
@@ -137,7 +137,7 @@ const STYLES = `
   .pill-btn:active, .pill-btn.pressed {
     filter: brightness(0.8);
     transform: scale(0.94);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   }
 
   /* vibration +/- value display */
@@ -149,7 +149,7 @@ const STYLES = `
     justify-content: center;
     font-size: 18px;
     font-weight: 700;
-    color: #c8e6c9;
+    color: var(--primary-color, #03a9f4);
   }
 
   /* ── section label ── */
@@ -158,7 +158,7 @@ const STYLES = `
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 2px;
-    color: #7a99b8;
+    color: var(--secondary-text-color, rgba(255,255,255,0.5));
     text-transform: uppercase;
     margin-bottom: 10px;
   }
@@ -175,23 +175,23 @@ const STYLES = `
     height: 52px;
     border-radius: 50%;
     border: none;
-    background: linear-gradient(145deg, #2a4a6a, #1a3050);
-    color: #a0c0e0;
+    background: var(--secondary-background-color, rgba(255,255,255,0.07));
+    color: var(--primary-text-color, #e8f4ff);
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.05);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     transition: background 0.15s, color 0.15s, transform 0.1s;
     -webkit-tap-highlight-color: transparent;
   }
   .round-btn:active, .round-btn.active {
-    background: linear-gradient(145deg, #6ecf5a, #3a9a28);
-    color: #fff;
+    background: var(--primary-color, #03a9f4);
+    color: var(--text-primary-color, #fff);
     transform: scale(0.94);
-    box-shadow: 0 2px 6px rgba(60,160,60,0.5);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
   }
 
   /* ── bottom bar ── */
@@ -199,7 +199,7 @@ const STYLES = `
     display: flex;
     align-items: center;
     padding: 8px 16px 14px;
-    border-top: 1px solid rgba(255,255,255,0.07);
+    border-top: 1px solid var(--divider-color, rgba(255,255,255,0.07));
   }
   .nav-tabs {
     display: flex;
@@ -212,7 +212,7 @@ const STYLES = `
     border-radius: 50%;
     border: none;
     background: transparent;
-    color: #4a6a8a;
+    color: var(--secondary-text-color, rgba(255,255,255,0.4));
     font-size: 18px;
     cursor: pointer;
     display: flex;
@@ -222,7 +222,7 @@ const STYLES = `
     -webkit-tap-highlight-color: transparent;
   }
   .nav-tab.active {
-    color: #6ecf5a;
+    color: var(--primary-color, #03a9f4);
   }
   .nav-tab svg {
     width: 22px;
@@ -233,14 +233,14 @@ const STYLES = `
     padding: 8px 22px;
     border-radius: 20px;
     border: none;
-    background: linear-gradient(145deg, #2a6a2a, #1a4a1a);
-    color: #6ecf5a;
+    background: var(--primary-color, #03a9f4);
+    color: var(--text-primary-color, #fff);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     transition: filter 0.1s;
     -webkit-tap-highlight-color: transparent;
   }
