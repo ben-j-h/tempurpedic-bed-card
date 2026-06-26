@@ -620,9 +620,10 @@ _buildBottomBar() {
         } else {
           this._callButton(action);
         }
-        // Brief visual flash
-        e.currentTarget.classList.add('active');
-        setTimeout(() => e.currentTarget.classList.remove('active'), 300);
+        // Brief visual flash (capture element — currentTarget is null inside setTimeout)
+        const btn = e.currentTarget;
+        btn.classList.add('active');
+        setTimeout(() => btn.classList.remove('active'), 300);
       });
     });
 
