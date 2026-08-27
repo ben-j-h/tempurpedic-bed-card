@@ -42,7 +42,16 @@ type: custom:tempurpedic-bed-card
 left_prefix: master_bedroom_left    # entity slug prefix for left side
 right_prefix: master_bedroom_right  # entity slug prefix for right side
 default_side: both                  # left | right | both
+left_name: Ben                      # optional — label for the LEFT toggle
+right_name: Sam                     # optional — label for the RIGHT toggle
+both_name: Both                     # optional — label for the BOTH toggle
 ```
+
+| Option | Default | Purpose |
+|---|---|---|
+| `left_prefix` / `right_prefix` | — | entity slug prefix for each side (at least one required) |
+| `default_side` | `both` | which side is selected on load: `left` \| `right` \| `both` |
+| `left_name` / `right_name` / `both_name` | `Left` / `Right` / `Both` | text on the side-toggle buttons (rendered uppercase) |
 
 ### Finding your prefix
 

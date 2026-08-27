@@ -7,6 +7,9 @@
  *   left_prefix: "ha_tempurpedic_left_side"   # entity slug prefix for left side
  *   right_prefix: "ha_tempurpedic_right_side"  # entity slug prefix for right side
  *   default_side: "both"                        # left | right | both
+ *   left_name: "Left"                           # optional label for the left toggle
+ *   right_name: "Right"                         # optional label for the right toggle
+ *   both_name: "Both"                           # optional label for the both toggle
  *
  * Entity IDs are constructed as:
  *   button.{prefix}_flat, button.{prefix}_head_up, button.{prefix}_head_down,
@@ -389,6 +392,12 @@ class TempurpedicBedCard extends HTMLElement {
     this._updateSilhouette();
   }
 
+  _escape(str) {
+    return String(str).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
   _activePrefixes() {
     const c = this._config || {};
     const prefixes = [];
@@ -481,11 +490,15 @@ class TempurpedicBedCard extends HTMLElement {
     const cfg = this._config || {};
     const hasBoth = cfg.left_prefix && cfg.right_prefix;
 
+    const leftLabel  = this._escape(cfg.left_name  || 'Left');
+    const rightLabel = this._escape(cfg.right_name || 'Right');
+    const bothLabel  = this._escape(cfg.both_name  || 'Both');
+
     const sideToggle = hasBoth ? `
       <div class="side-toggle">
-        <div class="side-btn ${this._side==='left'  ? 'active' : ''}" data-side="left">LEFT</div>
-        <div class="side-btn ${this._side==='both'  ? 'active' : ''}" data-side="both">BOTH</div>
-        <div class="side-btn ${this._side==='right' ? 'active' : ''}" data-side="right">RIGHT</div>
+        <div class="side-btn ${this._side==='left'  ? 'active' : ''}" data-side="left">${leftLabel}</div>
+        <div class="side-btn ${this._side==='both'  ? 'active' : ''}" data-side="both">${bothLabel}</div>
+        <div class="side-btn ${this._side==='right' ? 'active' : ''}" data-side="right">${rightLabel}</div>
       </div>` : '';
 
     return `
@@ -657,6 +670,8 @@ _buildBottomBar() {
       left_prefix:  'ha_tempurpedic_left_side',
       right_prefix: 'ha_tempurpedic_right_side',
       default_side: 'both',
+      left_name:  'Left',
+      right_name: 'Right',
     };
   }
 }
