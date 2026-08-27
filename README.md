@@ -37,6 +37,9 @@ type: module
 
 ## Configuration
 
+The card has a **visual editor** — add it from the dashboard's card picker and
+fill in the fields, or edit YAML directly:
+
 ```yaml
 type: custom:tempurpedic-bed-card
 left_prefix: master_bedroom_left    # entity slug prefix for left side

@@ -1,0 +1,23 @@
+name: "Release"
+
+on:
+  release:
+    types:
+      - "published"
+
+permissions: {}
+
+jobs:
+  release:
+    name: "Release"
+    runs-on: "ubuntu-latest"
+    permissions:
+      contents: write
+    steps:
+      - name: "Checkout the repository"
+        uses: "actions/checkout@v5"
+
+      - name: "Attach the card to the release"
+        uses: "softprops/action-gh-release@v2"
+        with:
+          files: dist/tempurpedic-bed-card.js

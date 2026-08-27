@@ -19,6 +19,14 @@
  *   number.{prefix}_vib_head, number.{prefix}_vib_torso, number.{prefix}_vib_legs
  */
 
+const CARD_VERSION = '1.3.0';
+
+console.info(
+  `%c TEMPURPEDIC-BED-CARD %c v${CARD_VERSION} `,
+  'color:#fff;background:#03a9f4;font-weight:700;border-radius:3px 0 0 3px;padding:2px 4px',
+  'color:#03a9f4;background:#1c1c1c;border-radius:0 3px 3px 0;padding:2px 4px',
+);
+
 
 const STYLES = `
   :host {
@@ -678,10 +686,109 @@ _buildBottomBar() {
 
 customElements.define('tempurpedic-bed-card', TempurpedicBedCard);
 
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Visual editor
+ * Rendered with <ha-form> (provided by the HA frontend) so it needs no build
+ * step and matches the native look. Editing any field emits `config-changed`.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+const EDITOR_SCHEMA = [
+  {
+    name: '',
+    type: 'grid',
+    schema: [
+      { name: 'left_prefix',  selector: { text: {} } },
+      { name: 'right_prefix', selector: { text: {} } },
+    ],
+  },
+  {
+    name: 'default_side',
+    selector: {
+      select: {
+        mode: 'dropdown',
+        options: [
+          { value: 'left',  label: 'Left' },
+          { value: 'both',  label: 'Both' },
+          { value: 'right', label: 'Right' },
+        ],
+      },
+    },
+  },
+  {
+    name: '',
+    type: 'grid',
+    schema: [
+      { name: 'left_name',  selector: { text: {} } },
+      { name: 'right_name', selector: { text: {} } },
+      { name: 'both_name',  selector: { text: {} } },
+    ],
+  },
+];
+
+const EDITOR_LABELS = {
+  left_prefix:  'Left entity prefix',
+  right_prefix: 'Right entity prefix',
+  default_side: 'Default side',
+  left_name:  'Left label',
+  right_name: 'Right label',
+  both_name:  'Both label',
+};
+
+const EDITOR_HELPERS = {
+  left_prefix:  'e.g. master_bedroom_left — the entity ID up to the last word',
+  right_prefix: 'Leave blank for a single (non-split) bed',
+  default_side: 'Which side is selected when the card loads',
+  left_name:  'Text on the LEFT toggle (shown uppercase). Default: Left',
+  right_name: 'Text on the RIGHT toggle (shown uppercase). Default: Right',
+  both_name:  'Text on the BOTH toggle (shown uppercase). Default: Both',
+};
+
+class TempurpedicBedCardEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = { ...config };
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (this._form) this._form.hass = hass;
+  }
+
+  _render() {
+    if (!this._form) {
+      this._form = document.createElement('ha-form');
+      this._form.computeLabel = (s) => EDITOR_LABELS[s.name] || s.name;
+      this._form.computeHelper = (s) => EDITOR_HELPERS[s.name] || '';
+      this._form.addEventListener('value-changed', (e) => {
+        e.stopPropagation();
+        const next = { type: this._config.type || 'custom:tempurpedic-bed-card' };
+        for (const [k, v] of Object.entries(e.detail.value)) {
+          if (v !== '' && v !== null && v !== undefined) next[k] = v;
+        }
+        this._config = next;
+        this.dispatchEvent(new CustomEvent('config-changed', {
+          detail: { config: next },
+          bubbles: true,
+          composed: true,
+        }));
+      });
+      this.appendChild(this._form);
+    }
+    this._form.hass = this._hass;
+    this._form.schema = EDITOR_SCHEMA;
+    this._form.data = this._config;
+  }
+}
+
+customElements.define('tempurpedic-bed-card-editor', TempurpedicBedCardEditor);
+
+
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'tempurpedic-bed-card',
   name: 'Tempurpedic Bed Card',
   description: 'Control panel for TEMPUR-Ergo adjustable base.',
+  documentationURL: 'https://github.com/ben-j-h/tempurpedic-bed-card',
   preview: true,
 });
