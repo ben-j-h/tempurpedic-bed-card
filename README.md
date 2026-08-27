@@ -44,7 +44,10 @@ fill in the fields, or edit YAML directly:
 type: custom:tempurpedic-bed-card
 left_prefix: master_bedroom_left    # entity slug prefix for left side
 right_prefix: master_bedroom_right  # entity slug prefix for right side
-default_side: both                  # left | right | both
+default_side: both                  # left | right | both — fallback for everyone
+user_sides:                         # optional — per-user starting side
+  Ben: left
+  Sam: right
 left_name: Ben                      # optional — label for the LEFT toggle
 right_name: Sam                     # optional — label for the RIGHT toggle
 both_name: Both                     # optional — label for the BOTH toggle
@@ -53,8 +56,13 @@ both_name: Both                     # optional — label for the BOTH toggle
 | Option | Default | Purpose |
 |---|---|---|
 | `left_prefix` / `right_prefix` | — | entity slug prefix for each side (at least one required) |
-| `default_side` | `both` | which side is selected on load: `left` \| `right` \| `both` |
+| `default_side` | `both` | side selected on load for anyone not in `user_sides` |
+| `user_sides` | — | map of HA user **name** (or user ID) → `left` / `right` / `both`; picks the starting side per logged-in user |
 | `left_name` / `right_name` / `both_name` | `Left` / `Right` / `Both` | text on the side-toggle buttons (rendered uppercase) |
+
+`user_sides` only sets which side is shown *first* — anyone can still tap the
+LEFT / BOTH / RIGHT toggle. Matching is by the user's display name; a user ID
+also works if names aren't unique.
 
 ### Finding your prefix
 

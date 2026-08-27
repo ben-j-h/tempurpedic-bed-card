@@ -19,7 +19,7 @@
  *   number.{prefix}_vib_head, number.{prefix}_vib_torso, number.{prefix}_vib_legs
  */
 
-const CARD_VERSION = '1.3.0';
+const CARD_VERSION = '1.4.0';
 
 console.info(
   `%c TEMPURPEDIC-BED-CARD %c v${CARD_VERSION} `,
@@ -391,13 +391,41 @@ class TempurpedicBedCard extends HTMLElement {
       throw new Error('tempurpedic-bed-card: set left_prefix and/or right_prefix');
     }
     this._config = config;
-    this._side = config.default_side || 'both';
+    this._sideResolved = false;
+    this._side = this._resolveDefaultSide();
     this._render();
   }
 
   set hass(hass) {
     this._hass = hass;
+    // hass arrives after setConfig, so this is the first chance to see who is
+    // logged in. Apply the per-user default once, without stomping later toggles.
+    if (!this._sideResolved && hass && hass.user) {
+      this._sideResolved = true;
+      const resolved = this._resolveDefaultSide();
+      if (resolved !== this._side) {
+        this._side = resolved;
+        this._render();
+        return;
+      }
+    }
     this._updateSilhouette();
+  }
+
+  _resolveDefaultSide() {
+    const c = this._config || {};
+    let side = c.default_side || 'both';
+    const user = this._hass && this._hass.user;
+    const map = c.user_sides || {};
+    if (user) {
+      for (const [who, s] of Object.entries(map)) {
+        if (who === user.name || who === user.id) { side = s; break; }
+      }
+    }
+    // Don't land on a side that has no prefix configured.
+    if (side === 'left'  && !c.left_prefix)  side = c.right_prefix ? 'right' : 'both';
+    if (side === 'right' && !c.right_prefix) side = c.left_prefix  ? 'left'  : 'both';
+    return side;
   }
 
   _escape(str) {
@@ -715,6 +743,7 @@ const EDITOR_SCHEMA = [
       },
     },
   },
+  { name: 'user_sides', selector: { object: {} } },
   {
     name: '',
     type: 'grid',
@@ -730,6 +759,7 @@ const EDITOR_LABELS = {
   left_prefix:  'Left entity prefix',
   right_prefix: 'Right entity prefix',
   default_side: 'Default side',
+  user_sides:   'Per-user default side',
   left_name:  'Left label',
   right_name: 'Right label',
   both_name:  'Both label',
@@ -738,7 +768,8 @@ const EDITOR_LABELS = {
 const EDITOR_HELPERS = {
   left_prefix:  'e.g. master_bedroom_left — the entity ID up to the last word',
   right_prefix: 'Leave blank for a single (non-split) bed',
-  default_side: 'Which side is selected when the card loads',
+  default_side: 'Side selected when the card loads for everyone not listed below',
+  user_sides:   'Map of HA user name (or user ID) to left / right / both — e.g. "Ben: left". Overrides the default above for that person.',
   left_name:  'Text on the LEFT toggle (shown uppercase). Default: Left',
   right_name: 'Text on the RIGHT toggle (shown uppercase). Default: Right',
   both_name:  'Text on the BOTH toggle (shown uppercase). Default: Both',
@@ -764,7 +795,9 @@ class TempurpedicBedCardEditor extends HTMLElement {
         e.stopPropagation();
         const next = { type: this._config.type || 'custom:tempurpedic-bed-card' };
         for (const [k, v] of Object.entries(e.detail.value)) {
-          if (v !== '' && v !== null && v !== undefined) next[k] = v;
+          if (v === '' || v === null || v === undefined) continue;
+          if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) continue;
+          next[k] = v;
         }
         this._config = next;
         this.dispatchEvent(new CustomEvent('config-changed', {
