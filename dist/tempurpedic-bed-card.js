@@ -12,14 +12,18 @@
  *   both_name: "Both"                           # optional label for the both toggle
  *
  * Entity IDs are constructed as:
- *   button.{prefix}_flat, button.{prefix}_head_up, button.{prefix}_head_down,
+ *   button.{prefix}_flat,
+ *   button.{prefix}_head_up, button.{prefix}_head_down,
  *   button.{prefix}_legs_up, button.{prefix}_legs_down,
- *   button.{prefix}_preset_1..4,
- *   button.{prefix}_vibrate_off, button.{prefix}_vibrate_1..4,
- *   number.{prefix}_vib_head, number.{prefix}_vib_torso, number.{prefix}_vib_legs
+ *   number.{prefix}_vib_head, number.{prefix}_vib_torso, number.{prefix}_vib_legs,
+ *   number.{prefix}_massage_program   (0 = off, 1..4 = built-in program)
+ *   number.{prefix}_position_preset   (0 = none, 1..4 = recall memory position)
+ *
+ * Needs ha_tempurpedic >= 1.1.0 (which replaced the preset/vibrate buttons with
+ * the two number entities above).
  */
 
-const CARD_VERSION = '1.4.0';
+const CARD_VERSION = '1.5.0';
 
 console.info(
   `%c TEMPURPEDIC-BED-CARD %c v${CARD_VERSION} `,
@@ -384,7 +388,12 @@ class TempurpedicBedCard extends HTMLElement {
     this._view = 'lift';       // 'lift' | 'massage'
     this._side = 'both';       // 'left' | 'right' | 'both'
     this._vibValues = { head: 0, torso: 0, legs: 0 };
+    this._program = 0;         // 0 = off, 1..4 = massage program
+    this._preset = 0;          // 0 = none, 1..4 = recalled memory position
+    this._suppressSyncUntil = 0;
   }
+
+  _touch() { this._suppressSyncUntil = Date.now() + 1500; }
 
   setConfig(config) {
     if (!config.left_prefix && !config.right_prefix) {
@@ -409,7 +418,28 @@ class TempurpedicBedCard extends HTMLElement {
         return;
       }
     }
+    this._syncFromEntities();
     this._updateSilhouette();
+  }
+
+  _syncFromEntities() {
+    if (!this._hass || !this.shadowRoot) return;
+    if (this._suppressSyncUntil && Date.now() < this._suppressSyncUntil) return;
+    const prefix = this._activePrefixes()[0];
+    if (!prefix) return;
+    const num = (suffix) => {
+      const s = this._hass.states[`number.${prefix}_${suffix}`];
+      const n = s ? parseInt(s.state, 10) : NaN;
+      return Number.isNaN(n) ? null : n;
+    };
+    const p  = num('massage_program');  if (p  !== null) this._program = p;
+    const pr = num('position_preset');  if (pr !== null) this._preset  = pr;
+    ['head', 'torso', 'legs'].forEach(z => {
+      const v = num(`vib_${z}`);
+      if (v !== null) this._vibValues[z] = v;
+    });
+    this._updateVibDisplays();
+    this._updateActive();
   }
 
   _resolveDefaultSide() {
@@ -452,21 +482,46 @@ class TempurpedicBedCard extends HTMLElement {
     });
   }
 
-  _setVib(zone, value) {
+  _setNumber(suffix, value) {
     if (!this._hass) return;
-    const clamped = Math.max(0, Math.min(10, value));
-    this._vibValues[zone] = clamped;
+    this._touch();
     this._activePrefixes().forEach(prefix => {
-      const eid = `number.${prefix}_vib_${zone}`;
+      const eid = `number.${prefix}_${suffix}`;
       if (this._hass.states[eid]) {
-        this._hass.callService('number', 'set_value', { entity_id: eid, value: clamped });
+        this._hass.callService('number', 'set_value', { entity_id: eid, value });
       }
     });
+  }
+
+  _setVib(zone, value) {
+    const clamped = Math.max(0, Math.min(10, value));
+    this._vibValues[zone] = clamped;
+    this._program = 0;                       // manual intensity clears the program
+    this._setNumber(`vib_${zone}`, clamped);
     this._updateVibDisplays();
+    this._updateActive();
+  }
+
+  _setProgram(n) {
+    this._program = n;
+    this._vibValues = n === 0
+      ? { head: 0, torso: 0, legs: 0 }
+      : { head: 5, torso: 5, legs: 5 };
+    this._setNumber('massage_program', n);
+    this._updateVibDisplays();
+    this._updateActive();
+  }
+
+  _setPreset(n) {
+    this._preset = n;
+    this._setNumber('position_preset', n);
+    this._updateActive();
   }
 
   _startHold(key) {
     if (!this._hass) return;
+    this._preset = 0;                        // manual movement clears the preset
+    this._updateActive();
     this._activePrefixes().forEach(prefix => {
       const eid = `button.${prefix}_${key}`;
       if (this._hass.states[eid]) {
@@ -487,6 +542,16 @@ class TempurpedicBedCard extends HTMLElement {
       if (val) val.textContent = this._vibValues[zone];
       const slider = this.shadowRoot.querySelector(`[data-vib-zone="${zone}"]`);
       if (slider) slider.value = this._vibValues[zone];
+    });
+  }
+
+  _updateActive() {
+    if (!this.shadowRoot) return;
+    this.shadowRoot.querySelectorAll('[data-preset]').forEach(b => {
+      b.classList.toggle('active', Number(b.dataset.preset) === this._preset && this._preset !== 0);
+    });
+    this.shadowRoot.querySelectorAll('[data-program]').forEach(b => {
+      b.classList.toggle('active', Number(b.dataset.program) === this._program && this._program !== 0);
     });
   }
 
@@ -519,6 +584,7 @@ class TempurpedicBedCard extends HTMLElement {
     shadow.appendChild(card);
 
     this._attachEvents(card);
+    this._updateActive();
     this._updateSilhouette();
   }
 
@@ -571,10 +637,10 @@ class TempurpedicBedCard extends HTMLElement {
       </div>
       <div class="section-label">MEMORY POSITION</div>
       <div class="round-row">
-        <button class="round-btn" data-action="preset_1">1</button>
-        <button class="round-btn" data-action="preset_2">2</button>
-        <button class="round-btn" data-action="preset_3">3</button>
-        <button class="round-btn" data-action="preset_4">4</button>
+        <button class="round-btn" data-preset="1">1</button>
+        <button class="round-btn" data-preset="2">2</button>
+        <button class="round-btn" data-preset="3">3</button>
+        <button class="round-btn" data-preset="4">4</button>
       </div>
     `;
   }
@@ -601,13 +667,13 @@ class TempurpedicBedCard extends HTMLElement {
           <span class="vib-slider-val vib-val-legs">${this._vibValues.legs}</span>
         </div>
       </div>
-      <div class="section-label">MASSAGE PRESET</div>
+      <div class="section-label">MASSAGE PROGRAM</div>
       <div class="round-row">
-        <button class="round-btn" data-action="vibrate_1">1</button>
-        <button class="round-btn" data-action="vibrate_2">2</button>
-        <button class="round-btn" data-action="vibrate_3">3</button>
-        <button class="round-btn" data-action="vibrate_4">4</button>
-        <button class="round-btn off-btn" data-action="vibrate_off">OFF</button>
+        <button class="round-btn" data-program="1">1</button>
+        <button class="round-btn" data-program="2">2</button>
+        <button class="round-btn" data-program="3">3</button>
+        <button class="round-btn" data-program="4">4</button>
+        <button class="round-btn off-btn" data-program="0">OFF</button>
       </div>
     `;
   }
@@ -660,19 +726,30 @@ _buildBottomBar() {
       });
     });
 
-    // Instant action buttons (presets, vib modes, flat, stop)
+    // Momentary action buttons (flat)
     card.querySelectorAll('[data-action]').forEach(el => {
       el.addEventListener('click', e => {
         const action = e.currentTarget.dataset.action;
-        if (action === 'vibrate_off') {
-          ['head', 'torso', 'legs'].forEach(zone => this._setVib(zone, 0));
-        } else {
-          this._callButton(action);
-        }
+        this._callButton(action);
+        if (action === 'flat') { this._preset = 0; this._updateActive(); }
         // Brief visual flash (capture element — currentTarget is null inside setTimeout)
         const btn = e.currentTarget;
         btn.classList.add('active');
         setTimeout(() => btn.classList.remove('active'), 300);
+      });
+    });
+
+    // Massage program: 1-4 start a program, 0 = OFF
+    card.querySelectorAll('[data-program]').forEach(el => {
+      el.addEventListener('click', e => {
+        this._setProgram(Number(e.currentTarget.dataset.program));
+      });
+    });
+
+    // Memory position: recall preset 1-4
+    card.querySelectorAll('[data-preset]').forEach(el => {
+      el.addEventListener('click', e => {
+        this._setPreset(Number(e.currentTarget.dataset.preset));
       });
     });
 

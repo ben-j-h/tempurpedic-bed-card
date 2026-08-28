@@ -7,15 +7,17 @@ A touch-optimized Lovelace card for the [ha-tempurpedic](https://github.com/ben-
 
 ![icon](icon.png)
 
-**Requires ha-tempurpedic v1.0.1 or newer.**
+**Requires ha-tempurpedic v1.1.0 or newer** (the version that replaced the
+preset / vibrate buttons with the `massage_program` and `position_preset`
+number entities).
 
 ## Features
 
-- **POSITION tab** — Hold HEAD ▲▼ and LEG ▲▼ to move; the integration loops commands server-side so there's no jitter. Memory presets 1–4. FLAT button always visible.
-- **MASSAGE tab** — Smooth range sliders for Head, Lumbar, and Leg vibration intensity (1–10). Four presets plus an OFF button directly in the row.
-- **Split-king toggle** — LEFT / BOTH / RIGHT selector sends commands to one or both sides simultaneously.
+- **POSITION tab** — Hold HEAD ▲▼ and LEG ▲▼ to move; the integration loops commands server-side so there's no jitter. Memory positions 1–4 (tap to recall; clears when you move the bed). FLAT button always visible.
+- **MASSAGE tab** — Smooth range sliders for Head, Lumbar, and Leg vibration intensity (0–10). A MASSAGE PROGRAM row (1–4 built-in programs + OFF); adjusting a slider drops the program.
+- **Split-king toggle** — LEFT / BOTH / RIGHT selector (labels configurable), plus per-user default side.
 - **HA theme-aware** — Uses CSS variables (`--ha-card-background`, `--primary-color`, etc.) so the card matches whatever theme you have active.
-- **Bed silhouette** — Static profile illustration on the position tab for spatial orientation. Will animate once tilt sensors are added.
+- **Bed silhouette** — Profile illustration on the position tab, animated from the integration's position sensors.
 
 ## Installation
 
@@ -89,12 +91,12 @@ The card expects these entities per prefix (all created automatically by ha-temp
 | `button.{prefix}_head_down` | Head down (hold) |
 | `button.{prefix}_legs_up` | Legs up (hold) |
 | `button.{prefix}_legs_down` | Legs down (hold) |
-| `button.{prefix}_preset_1` … `preset_4` | Memory presets |
-| `button.{prefix}_vibrate_off` | Stop vibration |
-| `button.{prefix}_vibrate_1` … `vibrate_4` | Vibration presets |
-| `number.{prefix}_vib_head` | Head vibration intensity 1–10 |
-| `number.{prefix}_vib_torso` | Lumbar vibration intensity 1–10 |
-| `number.{prefix}_vib_legs` | Leg vibration intensity 1–10 |
+| `number.{prefix}_vib_head` | Head vibration intensity 0–10 |
+| `number.{prefix}_vib_torso` | Lumbar vibration intensity 0–10 |
+| `number.{prefix}_vib_legs` | Leg vibration intensity 0–10 |
+| `number.{prefix}_massage_program` | 0 = off, 1–4 = built-in program |
+| `number.{prefix}_position_preset` | 0 = none, 1–4 = recall memory position |
+| `sensor.{prefix}_head_position` / `_leg_position` | drive the bed silhouette (optional) |
 
 ---
 
