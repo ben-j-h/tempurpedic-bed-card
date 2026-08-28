@@ -47,9 +47,9 @@ right_prefix: master_bedroom_right  # entity slug prefix for right side
 default_side: both                  # left | right | both — fallback for everyone
 user_sides:                         # optional — per-user starting side
   Ben: left
-  Sam: right
+  Carrie: right
 left_name: Ben                      # optional — label for the LEFT toggle
-right_name: Sam                     # optional — label for the RIGHT toggle
+right_name: Carrie                  # optional — label for the RIGHT toggle
 both_name: Both                     # optional — label for the BOTH toggle
 ```
 
