@@ -23,7 +23,7 @@
  * the two number entities above).
  */
 
-const CARD_VERSION = '1.5.0';
+const CARD_VERSION = '1.5.1';
 
 console.info(
   `%c TEMPURPEDIC-BED-CARD %c v${CARD_VERSION} `,
@@ -447,11 +447,21 @@ class TempurpedicBedCard extends HTMLElement {
     let side = c.default_side || 'both';
     const user = this._hass && this._hass.user;
     const map = c.user_sides || {};
-    if (user) {
-      for (const [who, s] of Object.entries(map)) {
-        if (who === user.name || who === user.id) { side = s; break; }
+    if (user && Object.keys(map).length) {
+      // Match the display name case-insensitively, either in full ("Ben Harr")
+      // or by first name ("Ben"), or the exact user ID. HA doesn't expose the
+      // login username to the frontend, so that can't be matched.
+      const norm = v => String(v).trim().toLowerCase();
+      const full = norm(user.name || '');
+      const first = full.split(/\s+/)[0];
+      const hit = Object.entries(map).find(([who]) =>
+        who === user.id || norm(who) === full || norm(who) === first);
+      if (hit) side = norm(hit[1]);
+      else if (this._sideResolved) {
+        console.warn(`tempurpedic-bed-card: no user_sides entry for "${user.name}" (id ${user.id}); using ${side}`);
       }
     }
+    if (!['left', 'right', 'both'].includes(side)) side = 'both';
     // Don't land on a side that has no prefix configured.
     if (side === 'left'  && !c.left_prefix)  side = c.right_prefix ? 'right' : 'both';
     if (side === 'right' && !c.right_prefix) side = c.left_prefix  ? 'left'  : 'both';

@@ -59,12 +59,16 @@ both_name: Both                     # optional — label for the BOTH toggle
 |---|---|---|
 | `left_prefix` / `right_prefix` | — | entity slug prefix for each side (at least one required) |
 | `default_side` | `both` | side selected on load for anyone not in `user_sides` |
-| `user_sides` | — | map of HA user **name** (or user ID) → `left` / `right` / `both`; picks the starting side per logged-in user |
+| `user_sides` | — | map of HA user display **name** (full or first, any case) or user ID → `left` / `right` / `both`; picks the starting side per logged-in user |
 | `left_name` / `right_name` / `both_name` | `Left` / `Right` / `Both` | text on the side-toggle buttons (rendered uppercase) |
 
 `user_sides` only sets which side is shown *first* — anyone can still tap the
-LEFT / BOTH / RIGHT toggle. Matching is by the user's display name; a user ID
-also works if names aren't unique.
+LEFT / BOTH / RIGHT toggle. Keys are matched against the user's **display name**
+(Settings → People), case-insensitively — either the full name (`Ben Harr`) or
+just the first name (`Ben`). A user ID also works if names aren't unique. The
+login username (e.g. `bharr`) is *not* visible to the frontend and won't match;
+if nothing matches, the card logs a warning to the browser console and falls
+back to `default_side`.
 
 ### Finding your prefix
 
